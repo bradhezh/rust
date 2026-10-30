@@ -154,7 +154,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
-      additionalLanguages: ["csharp"],
+      additionalLanguages: ["csharp", "toml"],
     },
     docs: { sidebar: { hideable: true } },
     tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 4 },
