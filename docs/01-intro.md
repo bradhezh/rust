@@ -30,7 +30,7 @@ cd hello_world
 # Or in the CWD
 mkdir src
 mv main.rs src
-cargo init
+cargo init --name hello_world
 
 cargo build
 cargo build --release
@@ -39,36 +39,58 @@ cargo run --release
 cargo check
 ```
 
-Crates are source-code packages managed by Cargo, typically compiled locally and statically linked rather than using shared libraries. Rust prioritises optimisation and does not guarantee a stable native ABI, although it can compile to shared libraries with a C-compatible ABI or use external libraries via its Foreign Function Interface (FFI). Note that the linker can discard unused code sections to prevent static linking from unnecessarily increasing binary size. Furthermore, Rust supports Link-Time Optimisation (LTO) across crate boundaries to improve performance and potentially reduce binary size through additional optimisations. Crates conventionally follow semantic versioning (_major_._minor_._patch_), where Cargo determines compatibility based on the leftmost non-zero version component. Before 1.0, the minor version normally acts as the compatibility boundary when the major version is zero, implying the lack of a stable API. Additionally, crates can be private and distributed via Git repositories or private registries.
+Crates are source-code packages managed by Cargo, typically compiled locally and statically linked rather than using shared libraries. Rust prioritises optimisation and does not guarantee a stable native ABI, although it can compile to shared libraries with a C-compatible ABI or use external libraries via its Foreign Function Interface (FFI). Note that the linker can discard unused code sections to prevent static linking from unnecessarily increasing binary size. Furthermore, Rust supports Link-Time Optimisation (LTO) across crate boundaries to improve performance and potentially reduce binary size through additional optimisations. Additionally, crates can be private and distributed via Git repositories or private registries.
+
+Crates conventionally follow semantic versioning (_major_._minor_._patch_), where Cargo determines compatibility based on the leftmost non-zero version component. Before 1.0, the minor version normally acts as the compatibility boundary when the major version zero implies the lack of a stable API.
+
+Dependency versions are declared in `Cargo.toml` as requirements and locked in `Cargo.lock` for building, and the latter will be updated if the former changes. The lockfile can also be updated by `cargo update`, which is also based on `Cargo.toml` but can update dependencies to the latest compatible versions without changing `Cargo.toml`. Locking dependency versions supports reproducible builds, but note that `Cargo.lock` is only used when the crate is built as the root (not as a dependency), because it should not force downstream applications to use its exact dependency versions. Consequently, reproducibility does not mean that applications reproduce all the same dependency versions that their dependencies used during development and testing. Following semantic versioning conventions is therefore crucial for Cargo to manage dependency updates and compatibility correctly.
 
 ### Cargo
 
 ```bash
 # Sources are typically cached in ~/.cargo/registry/.
+
 # Executable, compiled globally and installed to ~/.cargo/bin/
 cargo install ripgrep --version ^14
 cargo install --git https://github.com/bradhezh/my-crate-repo
 cargo install --list
 cargo uninstall ripgrep
+
 # Libs for the project, compiled with individual projects into their target/
+
+# Update Cargo.toml and Cargo.lock, as well as fetch and cache sources
+# --dev: For testing, benchmarking, and examples, like test frameworks and assertion libs, ignored
+#   by consumers
+# --build: For building, usually required by build.rs, like C compilers and pkgconfig, also used by
+#   consumers to build this as their dependencies
+# --git: From a git repo
+# --path: From a local path
 cargo add rand@0.10
-# Update with version semantics — keeping the leftmost non-zero version No. for compatibility.
-# Versions will be locked in Cargo.lock unless explicitly updated via this cmd or Cargo.toml.
+
+# Update Cargo.toml and Cargo.lock, but remain cached
+cargo remove rand
+# Update Cargo.lock only
 cargo update
+
+# Documentation including all dependencies
+cargo doc --open
 ```
 
 ```toml title="Cargo.toml"
 [package]
-# Block `cargo publish` from uploading to crates.io
+name = "hello_world"
+version = "0.1.0"
+edition = "2024"
+# Block `cargo publish` from uploading to Crates.io
 #publish = false
-...
+
 [dependencies]
-# Default (^) version semantics
+# Default (^) semantics: the latest compatible version (>= 0.10.3 and < 0.11.0 here)
 rand = "0.10.3"
-# Only patches can update, even for post-1.0 versions.
-#cfg-if = "~1.0.5"
-# Nothing can update.
+# The exact version
 #rand = "=0.10.3"
-my_crate_name = { git = "https://github.com/bradhezh/my-crate-repo", branch = "master" }
+# With the exact major and minor but the latest patch version
+#cfg-if = "~1.0.5"
+#my_crate_name = { git = "https://github.com/bradhezh/my-crate-repo", branch = "master" }
 ...
 ```
