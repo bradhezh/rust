@@ -97,6 +97,41 @@ rand = "0.10.3"
 
 Apart from its unique memory management model, Rust features distinct approaches to concepts common to almost all programming languages. For example, variables are immutable by default, which is particularly beneficial for concurrency. The language minimises undefined behaviour, requiring programmers to be explicit about their intent.
 
-Data types have fixed widths (e.g. `i32` rather than `int`), and numbers have definite overflow behaviour, while allowing programmers to explicitly specify how to handle integer overflows. Rust also makes a clear distinction between expressions and statements, preventing C-style chained assignments (e.g. `x = y = 5`). In fact, blocks, along with control flow constructs such as `if`/`else`, `match`, `loop`, `while`, and `for`, are all expressions that can return values. Rust also supports variable shadowing, allowing for more expressive code without unnecessary variable renaming.
+Data types have fixed widths (e.g. `i32` rather than `int`), and numbers have definite overflow behaviour, while allowing programmers to explicitly specify how to handle integer overflows. Rust also makes a clear distinction between expressions and statements, preventing C-style chained assignments (e.g. `x = y = 5`). Expressions implicitly return an empty tuple `()` by default, which is referred to as the unit value and type. In fact, blocks, along with control flow constructs such as `if`/`else`, `match`, `loop`, `while`, and `for`, are all expressions. Rust also supports variable shadowing, allowing for more expressive code without unnecessary variable renaming.
 
 Rust enforces strict static typing and disallows implicit type coercion. Array access is checked at runtime, with a predictable panic for out-of-bounds memory access, instead of the undefined behaviour typical of C. Moreover, Rust macros operate directly on the Abstract Syntax Tree (AST) rather than simple textual replacement, making metaprogramming significantly safer and more robust.
+
+### Guessing Game
+
+```rust title="src/main.rs"
+use std::cmp::Ordering;
+use std::io;
+
+use rand::prelude::*;
+
+fn main() {
+  let secret = rand::rng().random_range(1..=100);
+  loop {
+    println!("Please input your guess.");
+    let mut guess = String::new();
+    io::stdin()
+      .read_line(&mut guess)
+      .expect("Failed to read line");
+    let guess: u32 = match guess.trim().parse() {
+      // Note that `=>` is a separator between a pattern and an arm. A closure is like `|x| x + 1`.
+      Err(_) => continue,
+      Ok(n) => n,
+    };
+    println!("Your guess: {guess}");
+
+    match guess.cmp(&secret) {
+      Ordering::Equal => {
+        println!("You win!");
+        break;
+      }
+      Ordering::Less => println!("Too small!"),
+      Ordering::Greater => println!("Too big!"),
+    }
+  }
+}
+```
