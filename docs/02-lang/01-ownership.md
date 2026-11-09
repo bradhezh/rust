@@ -22,6 +22,8 @@ Moreover, the compiler implicitly uses reborrowing for mutable reference assignm
 
 Similarly to the ownership model, the compiler ensures borrowing and reborrowing safety. Based on this, Rust provides a clear, predictable memory management model that guarantees memory and concurrency safety with minimal runtime cost.
 
+### Ownership
+
 ```rust title="Ownership"
 fn ownership() {
   // Variables holding heap values
@@ -44,9 +46,11 @@ fn ownership() {
   let mut b = a;
   b.1 = 'b';
   //(0, 'a'), (0, 'b')
-  println!("{:?}, {:?}", a, b);
+  println!("{a:?}, {b:?}");
 } // s1 drops "world" right before it goes out of scope.
 ```
+
+### References
 
 ```rust title="References"
 fn main() {
@@ -69,6 +73,7 @@ fn refs(s: &str) {
   let mut s = String::from(s);
   // Point to a heap string value (&mut str)
   let r2 = &mut s[..1];
+  // Auto-ref/deref for method calls
   r2.make_ascii_uppercase();
   // Point to a variable holding a heap value (&String)
   let r3 = &s;
@@ -99,9 +104,11 @@ fn refs(s: &str) {
   let r9 = &mut r8[1..];
   r9[0] = 3;
   //[0, 1], [2, 3]
-  println!("{:?}, {:?}", r7, r8);
+  println!("{r7:?}, {r8:?}");
 }
 ```
+
+### Reborrowing
 
 ```rust title="Reborrowing"
 fn reborrow() {
