@@ -86,3 +86,109 @@ fn structs() {
   dbg!(label1.size(), Label::size(&label1));
 } // label1 drops "Label 2" right before it goes out of scope.
 ```
+
+Traditionally, the values of an enum can only be one of the named constants defined for it, while in Rust, they can also be values of named types, and enums can also have methods. For example, with different structs as variants, a Rust enum can serve as a sum type with different structures. Furthermore, these struct variants can be matched and destructured via `match` and patterns, providing type-based branching other than purely value-based `if`/`else`, while `match` actually supports value-based branching as well.
+
+Additionally, Rust provides `if let` and `let...else` as syntax sugar for `match` to pick only one pattern of values. For example, Rust does not support the null value directly while the standard library provides the `Option<T>` enum for values that could be nothing or something, which can be conveniently dealt with via `let...else`. Also, enums follow move semantics by default, exactly like structs. Note that for generic types to opt into copy semantics, the generic type itself and its type arguments are all required to implement `Copy`. For example, since `Option<T>` implements `Copy`, `Option<i32>` follows copy semantics whereas `Option<String>` falls back to move semantics.
+
+### Enums
+
+```rust title="Enums"
+#[derive(Debug)]
+enum Message {
+  // Unit struct
+  Quit,
+  // Struct
+  Pos { x: i32, y: i32 },
+  // Tuple struct
+  Write(String),
+}
+
+impl Message {
+  fn foo(&self) {
+    match self {
+      Message::Quit => println!("Quit"),
+      Message::Pos { x, y } => println!("Pos: {x}, {y}"),
+      /* Note that "matching on a reference type with a non-reference pattern implicitly borrows the
+       * contents", so don't use `ref` here to explicitly borrow again.
+      Message::Write(ref s) => println!("Write: {s}"),
+      */
+      Message::Write(s) => println!("Write: {s}"),
+    }
+  }
+}
+
+fn enums() {
+  let q = Message::Quit;
+  let m = Message::Pos { x: 1, y: 2 };
+  let w = Message::Write(String::from("hello"));
+  //Quit
+  q.foo();
+  //Pos: 1, 2
+  m.foo();
+  //Write: hello
+  w.foo();
+  //w = Write("hello")
+  dbg!(w);
+}
+```
+
+### Options
+
+```rust title="Options"
+/*
+enum Option<T> {
+  None,
+  Some(T),
+}
+*/
+
+fn op_on_nullable<T: std::fmt::Debug>(x: Option<T>, i: i32) {
+  /* Equivalent to
+  let x = match x {
+    Some(v) => v,
+    None => return,
+  };
+  */
+  let Some(x) = x else {
+    return;
+  };
+  /* Or
+  if let Some(x) = x {
+    ...
+  }
+  */
+
+  // Value-based
+  match i {
+    3 => println!("{x:?} and three"),
+    7 => println!("{x:?} and Seven"),
+    /* Equivalent to
+    _ => println!("{x:?} and {i}"),
+    */
+    other => println!("{x:?} and {other}"),
+    /* Do nothing
+    _ => (),
+    */
+  }
+}
+
+fn options() {
+  let five = Some(5);
+  let a = Some('a');
+  let s = String::from("hello");
+  // Reference used to avoid Move for String
+  let hello = Some(&s);
+  let null: Option<i32> = None;
+  // All Copy
+  //5 and three
+  op_on_nullable(five, 3);
+  //'a' and Seven
+  op_on_nullable(a, 7);
+  //"hello" and 10
+  op_on_nullable(hello, 10);
+  op_on_nullable(null, 0);
+  //five = Some(5); a = Some('a'); &s = "hello"; hello = Some("hello"); null = None
+  dbg!(five, a, &s, hello, null);
+}
+```

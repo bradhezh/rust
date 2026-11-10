@@ -278,4 +278,24 @@ fn main() {
         part: first_sentence,
     };
 }
+
+
+#[derive(Debug)]
+enum MutRef<'a, T> {
+  Ref(&'a mut T),
+}
+
+fn mut_ref() {
+  let mut s = String::from("hello");
+  let mut r = &mut s;
+  // auto-reborrow r with the same lifetime
+  //let r1 = MutRef::Ref(r);
+  // Move r if the type dest is just T without &mut, even if it can be inferred to &mut
+  //let r1 = Some(r);
+  /* the original is blocked
+  println!("{r}");
+  */
+  println!("{r1:?}");
+  println!("{r}");
+}
 ```
