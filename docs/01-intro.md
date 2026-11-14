@@ -24,7 +24,7 @@ rustup component add rust-analyzer
 
 rustc main.rs
 
-# Build system and package (crate) manager, also generate .git and .gitignore if not in any repo
+# Build system and package manager, also generate .git and .gitignore if not in any repo
 cargo new hello_world
 cd hello_world
 # Or in the CWD
@@ -39,11 +39,11 @@ cargo run --release
 cargo check
 ```
 
-Crates are source-code packages managed by Cargo, typically compiled locally and statically linked rather than using shared libraries. Rust prioritises optimisation and does not guarantee a stable native ABI, although it can compile to shared libraries with a C-compatible ABI or use external libraries via its Foreign Function Interface (FFI). Note that the linker can discard unused code sections to prevent static linking from unnecessarily increasing binary size. Furthermore, Rust supports Link-Time Optimisation (LTO) across crate boundaries to improve performance and potentially reduce binary size through additional optimisations. Additionally, crates can be private and distributed via Git repositories or private registries.
+A package can contain multiple crates, which can be either binary (executable) or libraries. Note that crates are source code, typically compiled locally and statically linked rather than using shared libraries. Rust prioritises optimisation and does not guarantee a stable native ABI, although it can compile to shared libraries with a C-compatible ABI or use external libraries via its Foreign Function Interface (FFI). Note that the linker can discard unused code sections to prevent static linking from unnecessarily increasing binary size. Furthermore, Rust supports Link-Time Optimisation (LTO) across crate boundaries to improve performance and potentially reduce binary size through additional optimisations. Additionally, packages can be private and distributed via Git repositories or private registries.
 
-Crates conventionally follow semantic versioning (_major_._minor_._patch_), where Cargo determines compatibility based on the leftmost non-zero version component. Before 1.0, the minor version normally acts as the compatibility boundary when the major version zero implies the lack of a stable API.
+Packages conventionally follow semantic versioning (_major_._minor_._patch_), where Cargo determines compatibility based on the leftmost non-zero version component. Before 1.0, the minor version normally acts as the compatibility boundary when the major version zero implies the lack of a stable API.
 
-Dependency versions are declared in `Cargo.toml` as requirements and locked in `Cargo.lock` for building, and the latter will be updated if the former changes. The lockfile can also be updated by `cargo update`, which is also based on `Cargo.toml` but can update dependencies to the latest compatible versions without changing `Cargo.toml`. Locking dependency versions supports reproducible builds, but note that `Cargo.lock` is only used when the crate is built as the root (not as a dependency). This is a trade-off because a crate should not force downstream applications to use its exact dependency versions. Consequently, reproducibility does not mean that applications reproduce all the same dependency versions that their dependencies used during development and testing. Following semantic versioning conventions is therefore crucial for Cargo to manage dependency updates and compatibility correctly.
+Dependency versions are declared in `Cargo.toml` as requirements and locked in `Cargo.lock` for building, and the latter will be updated if the former changes. The lockfile can also be updated by `cargo update`, which is also based on `Cargo.toml` but can update dependencies to the latest compatible versions without changing `Cargo.toml`. Locking dependency versions supports reproducible builds, but note that `Cargo.lock` is only used when the package is built as the root (not as a dependency). This is a trade-off because a package should not force downstream applications to use its exact dependency versions. Consequently, reproducibility does not mean that applications reproduce all the same dependency versions that their dependencies used during development and testing. Following semantic versioning conventions is therefore crucial for Cargo to manage dependency updates and compatibility correctly.
 
 ### Cargo
 
@@ -52,7 +52,7 @@ Dependency versions are declared in `Cargo.toml` as requirements and locked in `
 
 # Executable, compiled globally and installed to ~/.cargo/bin/
 cargo install ripgrep --version ^14
-cargo install --git https://github.com/bradhezh/my-crate-repo
+cargo install --git https://github.com/bradhezh/my-pkg-repo
 cargo install --list
 cargo uninstall ripgrep
 
@@ -91,7 +91,7 @@ rand = "0.10.3"
 #rand = "=0.10.3"
 # With the exact major and minor but the latest patch version
 #cfg-if = "~1.0.5"
-#my_crate_name = { git = "https://github.com/bradhezh/my-crate-repo", branch = "master" }
+#my_pkg_name = { git = "https://github.com/bradhezh/my-pkg-repo", branch = "master" }
 ...
 ```
 
