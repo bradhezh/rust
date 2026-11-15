@@ -1,5 +1,5 @@
 ---
-title: Chapter 2. Language
+title: Chapter 2. The Language
 sidebar_class_name: hidden-sidebar-item
 ---
 
@@ -13,6 +13,6 @@ sidebar_class_name: hidden-sidebar-item
   - 2.2.3. [Modules and Privacy](/lang/data-op/module)
   - 2.2.4. [Error Handling](/lang/data-op/error)
   - 2.2.5. [Closures and Iterators](/lang/data-op/closure)
-- 2.3. [Concurrency and Asynchrony](/lang/concurrency/intro)
+- 2.3. [Concurrency and Async](/lang/concurrency/intro)
 - 2.4. [Generics and Macros](/lang/generic/intro)
 - 2.5. [Unsafe Rust](/lang/unsafe/intro)
