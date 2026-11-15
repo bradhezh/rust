@@ -1,5 +1,5 @@
 ---
-title: 2.1. Ownership and Borrowing
+title: 2.1.1. Ownership and Borrowing
 ---
 
 The management of memory — specifically the heap — has long been a frequent source of program bugs and vulnerabilities. Beyond code itself, programs use three primary kinds of memory for data — static areas, the stack, and the heap. Typically, compilers allocate global or static variables and certain constants in a static area throughout the program lifecycle. Function parameters and local variables are allocated and deallocated at runtime with function calls on the stack, while compilers can still generate push and pop instructions for them. The key point is that both static and stack data have fixed sizes and patterns for allocation and deallocation, as well as fixed addresses or offsets for accessing them. All fixed factors can be determined at compile time, for compilers to know when and how much memory to allocate or deallocate, and how to access the allocated data.

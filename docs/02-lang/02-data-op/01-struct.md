@@ -1,5 +1,5 @@
 ---
-title: 2.2. Structs and Enums
+title: 2.2.1. Structs and Enums
 ---
 
 ### Structs

@@ -1,5 +1,5 @@
 ---
-title: 2.4. Modules and Privacy
+title: 2.2.3. Modules and Privacy
 ---
 
 Within a package, there can be one binary crate rooted at `src/main.rs`, or multiple binary crates rooted at each file in `src/bin/`, but at most only one library crate rooted at `src/lib.rs`. Crates are usually module trees from those roots.

@@ -1,5 +1,5 @@
 ---
-title: 2.3. Borrow Checking and Lifetimes
+title: 2.1.2. Borrow Checking and Lifetimes
 ---
 
 The compiler checks the validity of referenced data via the borrow checker, which ensures that any reference lifetime is entirely contained within the lifetime of the referenced data. Data lifetimes extend until the data goes out of scope (deallocated) or becomes invalid (moved), while reference lifetimes extend to the last use of the reference. While the exact data to be referenced at runtime cannot always be determined at compile time, the borrow checker operates conservatively, rejecting any runtime risk of dangling references.
@@ -31,7 +31,7 @@ fn borrow_checker() {
 }
 ```
 
-The borrow checker operates within functions, meaning that it does not look into function calls to deduce the data referenced by returned references (outputs). Instead, it uses the lifetime relationship between parameter references (inputs) and outputs from function signatures. For example, if an output is specified to have the same lifetime as an input, the borrow checker treats the output as the input for lifetime checking. In other words, it ensures that the output lifetime is contained within the lifetime of the data referenced by the input. Lifetimes are specified as another kind of generic parameters. If no lifetimes specified, the borrow checker will deduce the relationship. If there is only one input lifetime, it will be specified as the output lifetime. If there are multiple input lifetimes and one of them is `&self` or `&mut self` (methods), the lifetime of `self` will be specified as the output lifetime.
+The borrow checker operates within functions, meaning that it does not look into function calls to deduce the data referenced by returned references (outputs). Instead, it uses the lifetime relationship between parameter references (inputs) and outputs from function signatures. For example, if an output is specified to have the same lifetime as an input, the borrow checker treats the output as the input for lifetime checking. In other words, it ensures that the output lifetime is contained within the lifetime of the data referenced by the input. Lifetimes are specified as another kind of generic parameters, and serve as part of reference types. If no lifetimes specified, the borrow checker will deduce the relationship. If there is only one input lifetime, it will be specified as the output lifetime. If there are multiple input lifetimes and one of them is `&self` or `&mut self` (methods), the lifetime of `self` will be specified as the output lifetime.
 
 ### Lifetimes
 

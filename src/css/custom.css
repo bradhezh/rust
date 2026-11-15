@@ -59,6 +59,10 @@ code {
   margin-top: 1.2rem;
 }
 
+.hidden-sidebar-item {
+  display: none;
+}
+
 /* for pdf
 .markdown {
   font-size: 10pt;

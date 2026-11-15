@@ -1,6 +1,5 @@
 ---
-title: Chapter 1. Introduction
-slug: /
+title: Chapter 1. QuickStart
 ---
 
 Rust aims to improve on traditional systems-level languages such as C/C++. It offers the same low-level control and high performance, but adds strong safety guarantees. It introduces an ownership and borrowing model that allows the compiler to check and enforce memory safety and data-race freedom at compile time, without the runtime cost of garbage collection. Rust also includes various high-level features common in modern languages, such as type inference, closures, iterators, async/await, and a package and build system. Rust follows the principle of zero-cost abstractions, meaning that higher-level features compile to lower-level code that runs as fast as equivalent code written by hand. With its combination of performance, safety, and expressiveness, Rust is well suited to both systems-level programming and application-level development.
