@@ -42,7 +42,7 @@ A package can contain multiple crates, which can be either binary (executable) o
 
 Packages conventionally follow semantic versioning (_major_._minor_._patch_), where Cargo determines compatibility based on the leftmost non-zero version component. Before 1.0, the minor version normally acts as the compatibility boundary when the major version zero implies the lack of a stable API.
 
-Dependency versions are declared in `Cargo.toml` as requirements and locked in `Cargo.lock` for building, and the latter will be updated if the former changes. The lockfile can also be updated by `cargo update`, which is also based on `Cargo.toml` but can update dependencies to the latest compatible versions without changing `Cargo.toml`. Locking dependency versions supports reproducible builds, but note that `Cargo.lock` is only used when the package is built as the root (not as a dependency). This is a trade-off because a package should not force downstream applications to use its exact dependency versions. Consequently, reproducibility does not mean that applications reproduce all the same dependency versions that their dependencies used during development and testing. Following semantic versioning conventions is therefore crucial for Cargo to manage dependency updates and compatibility correctly.
+Dependency versions are declared in `Cargo.toml` as requirements and locked in `Cargo.lock` for building, and the latter will be updated if the former changes. The lockfile can also be updated by `cargo update`, which is also based on `Cargo.toml` but can update dependencies to the latest compatible versions without changing `Cargo.toml`. Locking dependency versions supports reproducible builds, but note that `Cargo.lock` is only used when the package is built as the root (not as a dependency). This is a trade-off because packages should not force downstream applications to use their exact dependency versions. Consequently, reproducibility does not mean that applications reproduce all the same dependency versions that their dependencies used during development and testing. Following semantic versioning conventions is therefore crucial for Cargo to manage dependency updates and compatibility correctly.
 
 ### Cargo
 
@@ -84,7 +84,7 @@ edition = "2024"
 #publish = false
 
 [dependencies]
-# Default (^) semantics: the latest compatible version (>= 0.10.3 and < 0.11.0 here)
+# Default (^) semantics: The latest compatible version (>= 0.10.3 and < 0.11.0 here)
 rand = "0.10.3"
 # The exact version
 #rand = "=0.10.3"
@@ -96,9 +96,9 @@ rand = "0.10.3"
 
 Apart from its unique memory management model, Rust features distinct approaches to concepts common to almost all programming languages. For example, variables are immutable by default, which is particularly beneficial for concurrency. The language minimises undefined behaviour, requiring programmers to be explicit about their intent.
 
-Numbers have explicit widths (e.g. `i32` and `f64` rather than `int` and `float`), with definite overflow behaviour, while allowing programmers to explicitly specify how to handle integer overflows. Rust also makes a clear distinction between expressions and statements, preventing C-style chained assignments (e.g. `x = y = 5`). Expressions implicitly return an empty tuple `()` by default, which is referred to as the unit value and type. In fact, blocks, along with control flow constructs such as `if`/`else`, `match`, `loop`, `while`, and `for`, are all expressions. Rust also supports variable shadowing, allowing for more expressive code without unnecessary variable renaming.
+Numbers have explicit widths (e.g. `i32` and `f64` rather than `int` and `float`), with definite overflow behaviour, while allowing programmers to explicitly specify how to handle integer overflow. Rust also makes a clear distinction between expressions and statements, preventing C-style chained assignment (e.g. `x = y = 5`). Expressions implicitly return an empty tuple `()` by default, which is referred to as the unit value and type. In fact, blocks, along with control flow constructs such as `if`/`else`, `match`, `loop`, `while`, and `for`, are all expressions. Rust also supports variable shadowing, allowing for more expressive code without unnecessary variable renaming.
 
-Rust enforces strict static typing and disallows arbitrary type coercion. Array access is checked at runtime, with a predictable panic for out-of-bounds memory access, instead of the undefined behaviour typical of C. Moreover, Rust macros operate directly on the Abstract Syntax Tree (AST) rather than simple textual replacement, making metaprogramming significantly safer and more robust.
+Rust enforces strict static typing and disallows arbitrary type coercion. Array access is checked at runtime, with a predictable panic for out-of-bounds memory access, instead of undefined behaviour typical of C. Moreover, Rust macros operate directly on the Abstract Syntax Tree (AST) rather than simple textual replacement, making metaprogramming significantly safer and more robust.
 
 ### Guessing Game
 
