@@ -2,6 +2,37 @@
 title: 2.2.1. Structs and Enums
 ---
 
+Furthermore, structs (including enums with struct variants) with reference fields must be generic with lifetime parameters for the borrow checker to enforce lifetime checking on the struct, without looking into associated functions to deduce the data referenced by its fields.
+
+### Struct Reference Lifetimes
+
+```rust title="Struct Reference Lifetimes"
+/* Error: missing lifetime specifier
+struct Ref {
+  s: &str,
+}
+*/
+#[derive(Debug)]
+struct Ref<'a> {
+  _s: &'a str,
+}
+
+// `_` as the elided lifetime, here is the only one input lifetime.
+fn new_ref1(input: &String) -> Ref<'_> {
+  Ref { _s: input }
+}
+
+fn struct_ref_lifetime() {
+  let s = String::from("hello");
+  let r = new_ref1(&s);
+  /* Error: cannot move out of `s` because it is borrowed
+  let s1 = s;
+  */
+  //Ref { _s: "hello" }
+  println!("{r:?}");
+}
+```
+
 ### Structs
 
 ```rust title="Structs"

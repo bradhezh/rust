@@ -2,21 +2,18 @@
 title: 2.1.2. Borrow Checking and Lifetimes
 ---
 
-The compiler checks the validity of referenced data via the borrow checker, which ensures that any reference lifetime is entirely contained within the lifetime of the referenced data. Data lifetimes extend until the data goes out of scope (deallocated) or becomes invalid (moved), while reference lifetimes extend to the last use of the reference. While the exact data to be referenced at runtime cannot always be determined at compile time, the borrow checker operates conservatively, rejecting any runtime risk of dangling references.
+The compiler checks the validity of referenced data via the borrow checker, which ensures that any reference lifetime is entirely contained within the lifetime of the referenced data. Data lifetimes extend until the data goes out of scope (deallocated) or becomes invalid (moved), while reference lifetimes extend to the last use of the reference. Note that lifetimes here do not refer to data survival duration in memory at runtime, but rather to the scope and usage extent of identifiers based on static analysis. While the exact data to be referenced at runtime cannot always be determined at compile time, the borrow checker operates conservatively, rejecting any runtime risk of dangling references.
 
 ### Borrow Checker
 
 ```rust title="Borrow Checker"
 fn borrow_checker() {
-  // 1. The elem type is inferred as integers, which can default to i32.
-  let mut opt = [0; 1];
+  let mut opt = String::new();
   io::stdin()
-    // 2. Then determined as u8 for the demand. Note that type inference might not be entirely
-    // determined at declarations.
-    .read_exact(&mut opt)
-    .expect("Failed to read");
-  let opt = match opt[0] {
-    b'y' | b'Y' => true,
+    .read_line(&mut opt)
+    .expect("Failed to read line");
+  let opt = match opt.trim().to_lowercase().as_str() {
+    "y" | "yes" => true,
     _ => false,
   };
 
@@ -31,126 +28,109 @@ fn borrow_checker() {
 }
 ```
 
-The borrow checker operates within functions, meaning that it does not look into function calls to deduce the data referenced by returned references (outputs). Instead, it uses the lifetime relationship between parameter references (inputs) and outputs from function signatures. For example, if an output is specified to have the same lifetime as an input, the borrow checker treats the output as the input for lifetime checking. In other words, it ensures that the output lifetime is contained within the lifetime of the data referenced by the input. Lifetimes are specified as another kind of generic parameters, and serve as part of reference types. If no lifetimes specified, the borrow checker will deduce the relationship. If there is only one input lifetime, it will be specified as the output lifetime. If there are multiple input lifetimes and one of them is `&self` or `&mut self` (methods), the lifetime of `self` will be specified as the output lifetime.
+The borrow checker operates within functions, meaning that it does not look into function calls to infer the data referenced by returned references. Instead, it applies reference lifetime relationships between inputs and outputs of function calls from function signatures. If an output reference is specified to have the same lifetime as an input reference, the borrow checker treats that output as that input, or its reborrow if it is reborrowed, for lifetime checking. This applies to data validity as well as simultaneous references and reborrows rules. For example, it ensures that the lifetime of that output is contained within the lifetime of the data referenced by that input. If no lifetimes are specified, the borrow checker attempts to infer the relationship. If there is only one input reference, or multiple ones but one of them is `&self` or `&mut self` (as in methods), it infers that output references have the same lifetime as that one.
+
+Reference lifetimes are specified as reference type specifiers. While there are concrete lifetimes such as `'static`, those specifiers are more often as generic parameters. Note that both input and output reference lifetimes can be flexible across different function calls, but this flexibility is constrained at compile time. Moreover, the relationship can still be fixed as generic logic. Based on this, the compiler instantiates generic lifetime parameters to concrete reference lifetimes for each function call.
 
 ### Lifetimes
 
 ```rust title="Lifetimes"
+// For lifetime checking, the output should be treated as the input, or an immutable/mutable
+// reborrow from the input accordingly if that input is a mutable reference and therefore reborrowed
+// by `s` as an immutable/mutable one, no matter whether that output itself is immutable or mutable.
+/* Auto-inferred as `fn new_ref<'a>(s: &'a mut str) -> &'a str`
+fn new_ref(s: &mut str) -> &str {
+*/
+/* Auto-inferred as `fn new_ref<'a>(s: &'a str) -> &'a str` */
+fn new_ref(s: &str) -> &str {
+  s
+  /* Note that there's no type specifier for reborrowing, so there's no way to specify return values
+   * with reborrowing relationships to params.
+  &*s
+  */
+}
+
 /* Error: missing lifetime specifier; this function’s return type contains a borrowed value, but the
  * signature does not say whether it is borrowed from `x` or `y`
 fn longest(x: &str, y: &str) -> &str {
 */
-// The output is treated as both `x` and `y` for lifetime checking, meaning the output lifetime
-// should be contained within the smaller lifetime of the data referenced by `x` and the data
-// referenced by `y`.
+// The output should be treated as both inputs for lifetime checking, so the output lifetime should
+// be contained within the smaller lifetime of the data referenced by those inputs.
 fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
   if x.len() > y.len() { x } else { y }
 }
 
-/* Auto-deduced as `fn new_ref<'a>(input: &'a String) -> &'a str`, meaning the output is treated as
- * `input` for lifetime checking
-fn new_ref(input: &String) -> &str {
-*/
-fn new_ref(input: &String) -> &'static str {
-  println!("{input}");
-  "hello"
-}
-
 fn lifetime() {
-  let s1 = String::from("longest");
+  let mut s1 = String::from("hello");
+  let r1 = &mut s1;
+  /* r1 is a mutable reference and therefore reborrowed by the param as an immutable/mutable one, so
+   * for lifetime checking, r2 is treated as an immutable/mutable reborrow from r1 accordingly, even
+   * if r2 itself is immutable. */
+  let r2 = new_ref(r1);
+  /* The original blocked
+  r1.push_str(", world");
+  */
+  /* If r1 is reborrowed by the param as a mutable one, this will also be block. */
+  //hello
+  println!("{r1}");
+  /* Without reborrowing, this violates simultaneous references rules.
+  let r2 = &s1;
+  */
+  //hello
+  println!("{r2}");
+  // The original resumed
+  //hello
+  println!("{r1}");
+
   let result;
   /* If s2 is within this block scope, the function call will fail with Error: s2 does not live long
    * enough.
   {
   */
   let s2 = String::from("a");
-  // `result` references "longest" at runtime, while the borrow checker compares it with both s1 and
+  // `result` references "hello" at runtime, while the borrow checker compares it with both s1 and
   // s2 based on the lifetime relationship from the function signature.
   result = longest(&s1, &s2);
   /*
   }
   */
-  //longest
-  println!("{result}");
-
-  //longest
-  let r = new_ref(&s1);
-  // With auto-deduction, `r` would be treated as a reference to s1, and this would fail with Error:
-  // cannot move out of s1 because it is borrowed.
-  let _s1 = s1;
   //hello
-  println!("{r}");
+  println!("{result}");
 }
 ```
 
-Furthermore, structs (including enums with struct variants) with reference fields must be generic with lifetime parameters for the borrow checker to enforce lifetime checking on the struct, without looking into associated functions to deduce the data referenced by its fields.
+In generic programming, types act as a typical kind of generic parameter. As type specifiers, lifetimes are included in instantiation when type parameters are instantiated to reference types. As mentioned earlier, the compiler implicitly reborrows mutable references when assigning them to typed destinations. When the destination is a generic type parameter, the compiler uses implicit reborrowing only if it is explicitly specified as `&mut`. When the destination is a bare type parameter, the compiler uses copy or move semantics strictly based on the instantiated type.
 
-### Struct Reference Lifetimes
+### Generic References
 
-```rust title="Struct Reference Lifetimes"
-/* Error: missing lifetime specifier
-struct Ref {
-  s: &str,
-}
-*/
-#[derive(Debug)]
-struct Ref<'a> {
-  _s: &'a str,
+```rust title="Generic References"
+fn mut_ref<T>(r: &mut T) -> &mut T {
+  r
 }
 
-// `_` as the elided lifetime, here is the only one input lifetime.
-fn new_ref1(input: &String) -> Ref<'_> {
-  Ref { _s: input }
+fn _foo<T>(x: T) -> T {
+  x
 }
 
-fn struct_ref_lifetime() {
-  let s = String::from("hello");
-  let r = new_ref1(&s);
-  /* Error: cannot move out of `s` because it is borrowed
-  let s1 = s;
-  */
-  //Ref { _s: "hello" }
-  println!("{r:?}");
-}
-```
-
-Similarly to types, reference lifetimes are essentially static contracts determined at compile time, which typically do not exist and therefore cannot be manipulated at runtime in traditional statically typed languages. Generic programming provides a way to make these rigid contracts programmable, based on the compiler supporting parameterised types and lifetimes used in contract logic to generate flexible contracts. While traditional code is executed by the machine and reusable across different runtime data, generic code is executed by the compiler and reusable across different static contracts (particularly types). Unlike dynamic types and decorators relying on runtime metadata, generic programming operates purely at compile time for zero-cost abstractions — the priority of Rust's design philosophy.
-
-As mentioned earlier, the compiler implicitly reborrows mutable references for assignment with typed destinations. Note that when destinations are generic type parameters, the compiler uses implicit reborrowing only if the parameter is explicitly specified as `&mut`. When the destination is a bare type parameter, the compiler uses copy or move semantics strictly based on the instantiated type.
-
-### Generic Mutable References
-
-```rust title="Generic Mutable References"
-#[derive(Debug)]
-enum MutRef<'a, T> {
-  Ref(&'a mut T),
-}
-
-fn generic_mut_ref() {
+fn generic_ref() {
   let mut s = String::from("hello");
   let r1 = &mut s;
-  /* Implicit reborrow */
-  let mut r2 = MutRef::Ref(r1);
-  /* Some(T): Move for mutable references
-  let mut r2 = Some(r1);
+  /* Implicit Reborrow */
+  let r2 = mut_ref(r1);
+  /* Move for mutable references
+  let r2 = _foo(r1);
+  */
+  /* Lifetimes instantiated within reference types
+  let _s = s;
   */
   /* Reborrow: The original blocked
   println!("{r1}");
   */
-  match r2 {
-    /* MutRef: Note that Ref(&'a mut T) serves as the pattern source, not the dest slot for `r`
-     * here, so `ref` is used to avoid Move for mutable references. */
-    MutRef::Ref(ref mut r) => r.push_str(", world"),
-    /* Some(T)
-    Some(ref mut r) => r.push_str(", world"),
-    _ => (),
-    */
-  }
-  //MutRef: Ref("hello, world")
-  //Some(T): Some("hello, world")
-  println!("{r2:?}");
+  r2.push_str(", world");
+  //hello, world
+  println!("{r2}");
   // Reborrow: The original resumed: hello, world
-  /* Move: Error: borrow of moved value: r1 */
+  /* Move: Error */
   println!("{r1}");
 }
 ```

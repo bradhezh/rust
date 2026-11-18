@@ -10,7 +10,7 @@ Each assignment causing an ownership transfer would result in verbose code. Rust
 
 References should follow copy semantics since they do not take ownership, and immutable references do implement `Copy`. However, Rust disallows any mutable reference to be used simultaneously with any other reference to the same data to prevent data races. Consequently, mutable references still follow move semantics to invalidate the original to ensure that any data can have only one mutable reference to be used. This causes verbose code again. Similarly to borrowing other than assignment, Rust provides reborrowing from references other than reference assignment. Via `&*original` or `&mut *original`, it borrows the referenced data again but temporarily restricts the original until the reborrow is no longer used. Specifically, mutable reborrows completely block the original, while immutable reborrows block only mutation, aligning with the rule for simultaneous references.
 
-Moreover, the compiler implicitly uses reborrowing for mutable reference assignment with typed destinations, such as parameters or via type annotations, particularly convenient for functions with mutable reference parameters. Additionally, the compiler can implicitly apply referencing or dereferencing in certain contexts to simplify code, such as auto-ref/deref for method calls, and deref coercion when passing parameters, but note that references are not aliases.
+Moreover, the compiler implicitly uses reborrowing when assigning mutable references to typed destinations, such as parameters or via type annotations, particularly convenient for calling functions with mutable references. Additionally, the compiler can implicitly apply referencing or dereferencing in certain contexts to simplify code, such as auto-ref/deref for method calls, and deref coercion when passing parameters, but note that references are not aliases.
 
 Similarly to the ownership model, the compiler ensures borrowing and reborrowing safety. Based on this, Rust provides a clear, predictable memory management model that guarantees memory and concurrency safety with minimal runtime cost.
 
@@ -134,6 +134,9 @@ fn reborrow() {
   //6
   println!("{r2}");
   // Immutable Reborrow: Mutation is blocked.
+  /* Equivalent to implicit reborrowing via the type annotation
+  let r3: &i32 = r2;
+  */
   let r3 = &*r2;
   /* Error: cannot assign to *r2 because it is borrowed
    *r2 = 7;
