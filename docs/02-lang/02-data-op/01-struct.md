@@ -2,57 +2,27 @@
 title: 2.2.1. Structs and Enums
 ---
 
-Furthermore, structs (including enums with struct variants) with reference fields must be generic with lifetime parameters for the borrow checker to enforce lifetime checking on the struct, without looking into associated functions to deduce the data referenced by its fields.
+Structs and enums are basic user-defined types in Rust, and both can have associated functions (methods). Note that they are nominal rather than structural. Unlike traditional enums only with constant values, Rust enums can also have different structs as variants, which can be matched and destructured via `match` and patterns. In Rust, enums serve as an algebraic type with flexible structures, providing a way to manipulate types in addition to generics.
 
-### Struct Reference Lifetimes
-
-```rust title="Struct Reference Lifetimes"
-/* Error: missing lifetime specifier
-struct Ref {
-  s: &str,
-}
-*/
-#[derive(Debug)]
-struct Ref<'a> {
-  _s: &'a str,
-}
-
-// `_` as the elided lifetime, here is the only one input lifetime.
-fn new_ref1(input: &String) -> Ref<'_> {
-  Ref { _s: input }
-}
-
-fn struct_ref_lifetime() {
-  let s = String::from("hello");
-  let r = new_ref1(&s);
-  /* Error: cannot move out of `s` because it is borrowed
-  let s1 = s;
-  */
-  //Ref { _s: "hello" }
-  println!("{r:?}");
-}
-```
+Structs (including enums as variant structs) are also regarded as owners if they contain fields holding heap values, but other fields can still remain valid even if those heap-holding fields are partially moved. Additionally, types with reference fields must be generic over lifetime parameters, for the borrow checker to enforce lifetime checking without looking into associated functions to infer the data referenced by fields. Note that move semantics is used by default. To opt into copy semantic, both the type itself and all its fields must implement `Copy`, while mutable references and heap-holding types can never implement `Copy`. Alternatively, types can implement `Drop`, which disables partial moving.
 
 ### Structs
 
 ```rust title="Structs"
-// Structs follow Move by default unless explicitly implementing Copy. Note that Rust types are
-// nominal rather than structural.
 #[derive(Debug)]
 struct Label {
-  // The struct (specifically the field) is the owner.
-  text: String,
+  _text: String,
   width: u32,
   height: u32,
 }
 
-// There can be multiple impl blocks for a struct.
+// There can be multiple impl blocks for one type.
 impl Label {
-  // Associated functions. `Self` is a type alias of the struct.
+  // Associated functions. `Self` is an alias of the type.
 
   fn new(text: &str, width: u32, height: u32) -> Self {
     Self {
-      text: String::from(text),
+      _text: String::from(text),
       width,
       height,
     }
@@ -85,84 +55,145 @@ fn structs() {
   let mut pos2 = pos1;
   pos2.0 = 2;
   pos2.1 = 2;
-  //pos1 = Pos(1, 1); pos2 = Pos(2, 2)
-  dbg!(pos1, pos2);
+  //Pos(1, 1), Pos(2, 2)
+  println!("{pos1:?}, {pos2:?}");
 
   // Default Move
   let mut label1 = Label::new("Label 1", 100, 10);
-  let label2 = Label::new("Label 2", dbg!(100 * 2), 20);
-  // Fields
-  // println! auto-refs params, whereas dbg! not.
-  //&label1.text = "Label 1"; label1.width = 100; label1.height = 10
-  dbg!(&label1.text, label1.width, label1.height);
-  // Move: label2 (or label2.text) invalidated, "Label 1" dropped
+  let label2 = Label::new("Label 2", 200, 20);
+  //Label { _text: "Label 1", width: 100, height: 10 }
+  println!("{label1:?}");
+  /* Move: label2 (or label2._text) invalidated, "Label 1" dropped */
   label1 = label2;
-  /* Or
-  label1.text = label2.text;
-  // Or field `text` moved while others copied
+  /* Or (Partial Move)
+  label1._text = label2._text;
+  // Or (Partial Move with Copy for others)
   label1 = Label { ..label2 };
   */
   // label1 is the owner of "Label 2".
-  //&label1 = Label { text: "Label 2", ...}
-  dbg!(&label1);
-  /* label2 (or label2.text) is invalid. Error: borrow of (partially) moved value: label2
-  dbg!(&label2);
-  dbg!(&label2.text);
-  // If only partially moved, left fields are still valid.
-  dbg!(&label2.width, &label2.height);
+  //Label { _text: "Label 2", ...}
+  println!("{label1:?}");
+  /* label2 (or label2._text) is invalid. Error: borrow of (partially) moved value: label2
+  println!("{label2:?}");
+  println!("{}", label2._text);
+  // Partial Move: Other fields remain valid.
+  println!("{}, {}", label2.width, label2.height);
   */
 
   // Auto-ref/deref for method calls
-  //label1.size() = 4000; Label::size(&label1) = 4000
-  dbg!(label1.size(), Label::size(&label1));
+  //4000, 4000
+  println!("{}, {}", label1.size(), Label::size(&label1));
 } // label1 drops "Label 2" right before it goes out of scope.
 ```
 
-Traditionally, the values of an enum can only be one of the named constants defined for it, while in Rust, they can also be values of named types, and enums can also have methods. For example, with different structs as variants, a Rust enum can serve as a sum type with different structures. Furthermore, these struct variants can be matched and destructured via `match` and patterns, providing type-based branching other than purely value-based `if`/`else`, while `match` actually supports value-based branching as well.
+### Struct Reference Lifetimes
 
-Additionally, Rust provides `if let` and `let...else` as syntax sugar for `match` to pick only one pattern of values. For example, Rust does not support the null value directly while the standard library provides the `Option<T>` enum for values that could be nothing or something, which can be conveniently dealt with via `let...else`. Also, enums follow move semantics by default, exactly like structs. Note that for generic types to opt into copy semantics, the generic type itself and its type arguments are all required to implement `Copy`. For example, since `Option<T>` implements `Copy`, `Option<i32>` follows copy semantics whereas `Option<String>` falls back to move semantics.
+```rust title="Struct Reference Lifetimes"
+/* Error: missing lifetime specifier
+struct Ref {
+  s: &str,
+}
+*/
+#[derive(Debug)]
+struct Ref<'a> {
+  _s: &'a str,
+}
+
+// '_ as the elided lifetime, inferred to the same lifetime as the only input.
+/*
+fn new_ref(s: &mut str) -> Ref<'_> {
+*/
+fn new_ref(s: &str) -> Ref<'_> {
+  Ref { _s: s }
+}
+
+fn struct_ref_lifetime() {
+  let mut s = String::from("hello");
+  let r1 = &mut s;
+  /* For lifetime checking, r2 is treated as an immutable/mutable reborrow from r1 accordingly. */
+  let r2 = new_ref(r1);
+  /* The original blocked
+  r1.push_str(", world");
+  */
+  /* If r1 is reborrowed by the param as a mutable one, this will also be blocked. */
+  //hello
+  println!("{r1}");
+  /* Without Reborrow, this violates simultaneous references rules.
+  let r2 = &s;
+  */
+  //Ref { _s: "hello" }
+  println!("{r2:?}");
+  // The original resumed
+  //hello
+  println!("{r1}");
+}
+```
 
 ### Enums
 
 ```rust title="Enums"
 #[derive(Debug)]
-enum Message {
+enum Message<'a> {
   // Unit struct
   Quit,
   // Struct
   Pos { x: i32, y: i32 },
-  // Tuple struct
-  Write(String),
+  // Tuple structs
+  Text(String),
+  MutRef(&'a mut String),
 }
 
-impl Message {
-  fn foo(&self) {
+impl<'a> Message<'a> {
+  fn foo(&mut self) {
     match self {
       Message::Quit => println!("Quit"),
       Message::Pos { x, y } => println!("Pos: {x}, {y}"),
       /* Note that "matching on a reference type with a non-reference pattern implicitly borrows the
-       * contents", so don't use `ref` here to explicitly borrow again.
-      Message::Write(ref s) => println!("Write: {s}"),
+       * contents", so don't use `ref` here as Explicit Borrow. */
+      Message::Text(s) => println!("Text: {s}"),
+      /* Or use a reference pattern without Implicit Borrow, and therefore `ref` should be used here
+       * for Explicit Borrow to avoid Move for String.
+      &mut Message::Text(ref s) => println!("Text: {s}"),
       */
-      Message::Write(s) => println!("Write: {s}"),
+      /* Note that MutRef(&'a mut String) serves as the pattern source, not the dest slot for `s`
+       * here, which still "implicitly borrows the contents", resulting in `&mut &mut String`, which
+       * still works here due to auto-deref.
+      Message::MutRef(s) => {
+      */
+      /* Or reference pattern with Explicit Borrow to avoid Move for mutable references, `ref mut`
+       * here still results in `&mut &mut String`. */
+      &mut Message::MutRef(ref mut s) => {
+        s.push_str(", world");
+        println!("MutRef: {s}");
+      }
     }
   }
 }
 
 fn enums() {
-  let q = Message::Quit;
-  let m = Message::Pos { x: 1, y: 2 };
-  let w = Message::Write(String::from("hello"));
+  let mut quit = Message::Quit;
+  let mut pos = Message::Pos { x: 1, y: 2 };
+  let mut text = Message::Text(String::from("hello"));
+  let mut s = String::from("hello");
+  let mut mut_ref = Message::MutRef(&mut s);
   //Quit
-  q.foo();
+  quit.foo();
   //Pos: 1, 2
-  m.foo();
-  //Write: hello
-  w.foo();
-  //w = Write("hello")
-  dbg!(w);
+  pos.foo();
+  //Text: hello
+  text.foo();
+  //Text("hello")
+  println!("{text:?}");
+  //MutRef: hello, world
+  mut_ref.foo();
+  //MutRef("hello, world")
+  println!("{mut_ref:?}");
+  //hello, world
+  println!("{s}");
 }
 ```
+
+With enums as variant structs, `match` provides type-based branching other than purely value-based `if`/`else`, while `match` supports value-based branching as well. Additionally, Rust provides `if let` and `let...else` as syntax sugar for `match` to pick only one pattern of values. For example, Rust does not support the null value directly, while the standard library provides the `Option<T>` enum for values that could be nothing or something. Nullish values can be conveniently filtered via `let...else`. Note that to opt into copy semantic, generic types like `Option<T>` typically implement `Copy` under a trait bound `T: Copy`, where `T` acts as the inner field type. Consequently, `Option<i32>` and `Option<&String>` follow copy semantics whereas `Option<String>` and `Option<&mut String>` fall back to move semantics.
 
 ### Options
 
@@ -192,8 +223,8 @@ fn op_on_nullable<T: std::fmt::Debug>(x: Option<T>, i: i32) {
 
   // Value-based
   match i {
-    3 => println!("{x:?} and three"),
-    7 => println!("{x:?} and Seven"),
+    0 => println!("{x:?} and ZERO"),
+    10 => println!("{x:?} and ten"),
     /* Equivalent to
     _ => println!("{x:?} and {i}"),
     */
@@ -205,21 +236,29 @@ fn op_on_nullable<T: std::fmt::Debug>(x: Option<T>, i: i32) {
 }
 
 fn options() {
+  let null: Option<i32> = None;
   let five = Some(5);
   let a = Some('a');
   let s = String::from("hello");
-  // Reference used to avoid Move for String
+  /* Borrow */
   let hello = Some(&s);
-  let null: Option<i32> = None;
+  /* Move
+  let hello = Some(s);
+  */
   // All Copy
-  //5 and three
-  op_on_nullable(five, 3);
-  //'a' and Seven
-  op_on_nullable(a, 7);
-  //"hello" and 10
-  op_on_nullable(hello, 10);
   op_on_nullable(null, 0);
-  //five = Some(5); a = Some('a'); &s = "hello"; hello = Some("hello"); null = None
-  dbg!(five, a, &s, hello, null);
+  //5 and ZERO
+  op_on_nullable(five, 0);
+  //'a' and ten
+  op_on_nullable(a, 10);
+  // Borrow: Copy for Option<&String>, Move for Option<&mut String>
+  // Move: Move for Option<String>
+  //"hello" and 1
+  op_on_nullable(hello, 1);
+  //None, Some(5), Some('a')
+  println!("{null:?}, {five:?}, {a:?}");
+  // Copy: Some("hello"), hello
+  /* Move: Error */
+  println!("{hello:?}, {s}");
 }
 ```

@@ -70,10 +70,10 @@ fn lifetime() {
   /* The original blocked
   r1.push_str(", world");
   */
-  /* If r1 is reborrowed by the param as a mutable one, this will also be block. */
+  /* If r1 is reborrowed by the param as a mutable one, this will also be blocked. */
   //hello
   println!("{r1}");
-  /* Without reborrowing, this violates simultaneous references rules.
+  /* Without Reborrow, this violates simultaneous references rules.
   let r2 = &s1;
   */
   //hello
