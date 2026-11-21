@@ -262,3 +262,69 @@ fn options() {
   println!("{hello:?}, {s}");
 }
 ```
+
+In Rust, there are common patterns for wrappers (of type `W<T>`, e.g. `Option<T>`) with inner payload values (of type `T`), including projection methods, materialisation methods, swapping methods, and direct extractors. Projection or materialisation methods return a new wrapper. Swapping methods return either a new wrapper (e.g. `Option<T>`) or the payload by value (e.g. `T` for `Cell<T>` and `RefCell<T>`). Direct extractors return the payload by value or by reference.
+
+Typically, `as_ref`/`as_mut` projects `W<T>` to `W<&T>`/`W<&mut T>`, while `as_deref`/`as_deref_mut` projects `W<T>` to `W<&T::Target>`/`W<&mut T::Target>` under a trait bound `T: Deref`/`T: DerefMut` where `Target` is specified. For example, `String` specifies both `Deref::Target` and `DerefMut::Target` as `str`, so `Option<String>::as_deref()` returns `Option<&str>` and `Option<String>::as_deref_mut()` returns `Option<&mut str>`. Similarly, since `&mut T` implements `Deref<Target = T>`, `as_deref` can also downgrade `W<&mut T>` to `W<&T>`. For example, `Option<&mut i32>::as_deref()` returns `Option<&i32>`. However, `&T` does not implement `DerefMut`, preventing `W<&T>` from being upgraded to `W<&mut T>`. Projection methods take `&self`/`&mut self` without moving the wrapper.
+
+The `copied` (under `T: Copy`) or `cloned` (under `T: Clone`) method copies or clones the referenced payload from `W<&T>`/`W<&mut T>` into `W<T>`. Note that materialisation methods take `self`, moving it if the wrapper follows move semantics. For example, `Option<&mut i32>::copied()` moves the wrapper, whereas `Option<&mut i32>::as_deref().copied()` avoids moving it.
+
+The `replace` method swaps the payload with a new value, while `take` swaps it with a default/empty state — either `W: Default` (e.g. `Option::None`) or `T: Default` (for `Cell<T>` and `RefCell<T>`). Swapping methods take `&mut self`.
+
+The `unwrap` method returns `T`, panicking if the wrapper is in an empty or unsuccessful state. It takes `self`, moving it if the wrapper follows move semantics. In contrast, `get_or_insert` takes `&mut self` and returns `&mut T`, inserting a payload only when the wrapper is in its empty state such as `Option::None`.
+
+### Wrapper Patterns
+
+```rust title="Wrapper Patterns"
+fn wrapper() {
+  //Type: Option<String>
+  let mut w = Some(String::from("hello"));
+  //Type: Option<&mut String>
+  let p = w.as_mut();
+  //Type: &mut String
+  let v = p.unwrap();
+  v.push_str(", world!");
+  //Type: Option<&String>
+  let p = w.as_ref();
+  //Some("hello, world!")
+  println!("{p:?}");
+  //Type: Option<&mut str>
+  let p = w.as_deref_mut();
+  //Type: &mut str
+  let v = p.unwrap();
+  v[..1].make_ascii_uppercase();
+  //Type: Option<&str>
+  let p = w.as_deref();
+  //Some("Hello, world!")
+  println!("{p:?}");
+
+  //Type: Option<i32>
+  let mut w = Some(5);
+  //Type: Option<&mut i32>
+  let p1 = w.as_mut();
+  /* Move for Option<&mut i32>
+  let m = p1.copied();
+  */
+  /* Downgrade */
+  //Type: Option<&i32>
+  let p2 = p1.as_deref();
+  //Type: Option<i32>
+  let m = p2.copied();
+  //Type: &mut i32
+  let v = p1.unwrap();
+  // Don't use p1 and p2 any more since p1 is moved (unwrapped) and p2 borrows from p1.
+  *v += 1;
+  //Some(5), Some(6)
+  println!("{m:?}, {w:?}");
+
+  let mut w = None;
+  //None, Some(1)
+  println!("{:?}, {w:?}", w.replace(1));
+  //Some(1), None
+  println!("{:?}, {w:?}", w.take());
+  //1
+  println!("{:?}", w.get_or_insert(1));
+  //Some(1)
+  println!("{w:?}");
+}
+```
