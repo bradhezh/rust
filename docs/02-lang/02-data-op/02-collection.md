@@ -1,5 +1,5 @@
 ---
-title: 2.2.2. Collections and Iteration
+title: 2.2.2. Collections and Iterators
 ---
 
 Collections, including vectors (`Vec<T>`), strings (`String`), and hash maps (`HashMap<K, V>`), are types holding heap values. In memory, elements are organised in contiguous buffers with flexible lengths, rather than scattered as linked nodes, to maximises CPU cache locality and avoids pointer-chasing overheads. Under the hood, `String` is a wrapper around a vector of UTF-8 bytes (`Vec<u8>`).
